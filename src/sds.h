@@ -61,10 +61,10 @@ struct __attribute__ ((__packed__)) sdshdr16 {
     char buf[];
 };
 struct __attribute__ ((__packed__)) sdshdr32 {
-    uint32_t len; /* used */
-    uint32_t alloc; /* excluding the header and null terminator */
-    unsigned char flags; /* 3 lsb of type, 5 unused bits */
-    char buf[];
+    uint32_t len; /** 记录了字符串长度 */
+    uint32_t alloc; /** 分配的空间长度 （不包含头部的和空结束符号） */
+    unsigned char flags; /** 用来表示不同类型的 SDS *//** 3位最低有效位表示类型, 其余 5个比特位未被使用 */
+    char buf[]; /** 字符数组，用来保存实际数据 */
 };
 struct __attribute__ ((__packed__)) sdshdr64 {
     uint64_t len; /* used */
