@@ -32,7 +32,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
+/** 字典的实现 (使用哈希表)
+ *
+ * 本文件通过内存哈希表实现了字典中 插入/删除/替换/查找/获取随机元素操作 的操作.
+ * 哈希表的大小会在哈希表充满时以 2 的倍数扩充 (256, 512, 1024),
+ * 并使用链表解决 hash 冲突.
+ */
 #ifndef __DICT_H
 #define __DICT_H
 
@@ -47,10 +52,11 @@
 /* Unused arguments generate annoying warnings... */
 #define DICT_NOTUSED(V) ((void) V)
 
+/**哈希表节点结构*/
 typedef struct dictEntry {
-    void *key;
+    void *key;    /**指向的是String对象*/
     union {
-        void *val;
+        void *val;  /** 可以指向 String 对象，也可以指向集合类型的对象，比如 List 对象、Hash 对象、Set 对象和 Zset 对象。*/
         uint64_t u64;
         int64_t s64;
         double d;
@@ -58,18 +64,30 @@ typedef struct dictEntry {
     struct dictEntry *next;
 } dictEntry;
 
+/**
+ * 字典类型，因为我们会将字典用在各个地方，例如键空间、过期字典等等等，只要是想用字典（哈希表）的场景都可以用
+ * 这样的话每种类型的字典，它对应的 key / value 肯定类型是不一致的，这就需要有一些自定义的方法，例如键值对复制、析构等
+ */
 typedef struct dictType {
+    //计算哈希值函数
     uint64_t (*hashFunction)(const void *key);
+    //复制键的函数
     void *(*keyDup)(void *privdata, const void *key);
+    //复制值的函数
     void *(*valDup)(void *privdata, const void *obj);
+    //对比键的函数
     int (*keyCompare)(void *privdata, const void *key1, const void *key2);
+    //销毁键的函数
     void (*keyDestructor)(void *privdata, void *key);
+    //销毁值的函数
     void (*valDestructor)(void *privdata, void *obj);
+    // 字典里的哈希表是否允许扩容
     int (*expandAllowed)(size_t moreMem, double usedRatio);
 } dictType;
 
 /* This is our hash table structure. Every dictionary has two of this as we
  * implement incremental rehashing, for the old to the new table. */
+/**哈希表结构。当我们实现从旧表到新表rehash时，每个字典都有两个这样的结构。 */
 typedef struct dictht {
     dictEntry **table;
     unsigned long size;
@@ -77,12 +95,14 @@ typedef struct dictht {
     unsigned long used;
 } dictht;
 
+/**字典数据结构*/
 typedef struct dict {
-    dictType *type;
-    void *privdata;
-    dictht ht[2];
-    long rehashidx; /* rehashing not in progress if rehashidx == -1 */
-    int16_t pauserehash; /* If >0 rehashing is paused (<0 indicates coding error) */
+    dictType *type;  /**字典类型*/
+    void *privdata;  /**保存传递给类型特定函数的私有参数*/
+    dictht ht[2];    /**存放了 2 个哈希表，正常情况下都是用「哈希表1」，「哈希表2」只有在 rehash 的时候才用*/
+    long rehashidx;  /**rehash的进度，等于-1表示未进行rehash*/
+    /** 将小尺寸的变量置于结构体的尾部, 减少对齐产生的额外空间开销. */
+    int16_t pauserehash; /**如果此变量值 >0 表示 rehash 暂停；(<0 表示编写的代码出错了). */
 } dict;
 
 /* If safe is set to 1 this is a safe iterator, that means, you can call

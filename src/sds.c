@@ -230,6 +230,8 @@ void sdsclear(sds s) {
  *
  * Note: this does not change the *length* of the sds string as returned
  * by sdslen(), but only the free buffer space we have. */
+/**扩大sds字符串末尾的空闲空间，以便调用者确定在调用此函数后可以覆盖字符串结束后的addlen字节，并为null项增加一个字节。
+ * 注意:这不会改变sdslen()返回的sds字符串的长度，但只改变我们拥有的空闲缓冲区空间。*/
 sds sdsMakeRoomFor(sds s, size_t addlen) {
     void *sh, *newsh;
     size_t avail = sdsavail(s);
@@ -239,15 +241,19 @@ sds sdsMakeRoomFor(sds s, size_t addlen) {
     size_t usable;
 
     /* Return ASAP if there is enough space left. */
+    /** s目前的剩余空间已足够，无需扩展，直接返回*/
     if (avail >= addlen) return s;
 
     len = sdslen(s);
     sh = (char*)s-sdsHdrSize(oldtype);
+    /**扩展之后 s 至少需要的长度*/
     reqlen = newlen = (len+addlen);
     assert(newlen > len);   /* Catch size_t overflow */
+    /**根据新长度，为s分配新空间所需的大小*/
     if (newlen < SDS_MAX_PREALLOC)
-        newlen *= 2;
+        newlen *= 2; /**新长度 < 1MB 则分配 所需空间*2 的空间*/
     else
+        /**否则，分配长度为目前长度 + 1MB*/
         newlen += SDS_MAX_PREALLOC;
 
     type = sdsReqType(newlen);
@@ -411,6 +417,8 @@ void sdsIncrLen(sds s, ssize_t incr) {
  *
  * if the specified length is smaller than the current length, no operation
  * is performed. */
+/**使sds具有指定的长度。不属于sds原始长度的字节将被设置为零。
+ * 如果指定的长度小于当前长度，则不进行操作。*/
 sds sdsgrowzero(sds s, size_t len) {
     size_t curlen = sdslen(s);
 

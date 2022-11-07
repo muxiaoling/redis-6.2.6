@@ -227,8 +227,12 @@
 #define ZIP_IS_STR(enc) (((enc) & ZIP_STR_MASK) < ZIP_STR_MASK)
 
 /* Utility macros.*/
-
+/**
+ * ziplist 属性宏
+ */
 /* Return total bytes a ziplist is composed of. */
+// 定位到 ziplist 的 bytes 属性，该属性记录了整个 ziplist 所占用的内存字节数
+// 用于取出 bytes 属性的现有值，或者为 bytes 属性赋予新值
 #define ZIPLIST_BYTES(zl)       (*((uint32_t*)(zl)))
 
 /* Return the offset of the last item inside the ziplist. */
@@ -236,6 +240,7 @@
 
 /* Return the length of a ziplist, or UINT16_MAX if the length cannot be
  * determined without scanning the whole ziplist. */
+// 定位到 ziplist 的 length 属性，该属性记录了 ziplist 包含的节点数量
 #define ZIPLIST_LENGTH(zl)      (*((uint16_t*)((zl)+sizeof(uint32_t)*2)))
 
 /* The size of a ziplist header: two 32 bit integers for the total
@@ -281,22 +286,32 @@ int ziplistSafeToAdd(unsigned char* zl, size_t add) {
 /* We use this function to receive information about a ziplist entry.
  * Note that this is not how the data is actually encoded, is just what we
  * get filled by a function in order to operate more easily. */
+/**我们使用这个结构体来接收关于ziplist节点的信息。方便后面进行函数操作
+ * 注意，这并不是数据的实际编码方式，只是为了更容易地操作*/
 typedef struct zlentry {
+    /** 存储下面 prevrawlen 所需要的字节数 */
     unsigned int prevrawlensize; /* Bytes used to encode the previous entry len*/
+    /** 存储前一个节点的字节长度 */
     unsigned int prevrawlen;     /* Previous entry len. */
+    /** 存储下面 len 所需要的字节数 */
     unsigned int lensize;        /* Bytes used to encode this entry type/len.
                                     For example strings have a 1, 2 or 5 bytes
                                     header. Integers always use a single byte.*/
+    /** 存储当前节点的字节长度 */
     unsigned int len;            /* Bytes used to represent the actual entry.
                                     For strings this is just the string length
                                     while for integers it is 1, 2, 3, 4, 8 or
                                     0 (for 4 bit immediate) depending on the
                                     number range. */
+    /** prevrawlensize + lensize 当前节点的头部字节，
+    * 其实是 prevlen + encoding 两项占用的字节数 */
     unsigned int headersize;     /* prevrawlensize + lensize. */
+    /** 存储当前节点的数据编码格式 */
     unsigned char encoding;      /* Set to ZIP_STR_* or ZIP_INT_* depending on
                                     the entry encoding. However for 4 bits
                                     immediate integers this can assume a range
                                     of values and must be range-checked. */
+    /** 指向当前节点的指针 */
     unsigned char *p;            /* Pointer to the very start of the entry, that
                                     is, this points to prev-entry-len field. */
 } zlentry;
