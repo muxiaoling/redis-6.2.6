@@ -89,10 +89,10 @@ typedef struct dictType {
  * implement incremental rehashing, for the old to the new table. */
 /**哈希表结构。当我们实现从旧表到新表rehash时，每个字典都有两个这样的结构。 */
 typedef struct dictht {
-    dictEntry **table;
-    unsigned long size;
-    unsigned long sizemask;
-    unsigned long used;
+    dictEntry **table;      //哈希表数组
+    unsigned long size;     //哈希表大小
+    unsigned long sizemask; //哈希表大小掩码，用于计算索引值
+    unsigned long used;     //该哈希表已有的节点数量
 } dictht;
 
 /**字典数据结构*/
